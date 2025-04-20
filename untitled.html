@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FLETXO FIRE V2</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        .container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+        }
+        #particleCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+        h1 {
+            color: #ff0000;
+            font-size: 3rem;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px red, 0 0 20px blue;
+            z-index: 1;
+        }
+        .glowing-red {
+            border: 2px solid red;
+            box-shadow: 0 0 10px red;
+            padding: 10px;
+            margin: 10px;
+            width: 90%;
+            z-index: 1;
+            background-color: rgba(0, 0, 0, 0.6);
+        }
+        .textview {
+            margin: 10px;
+            font-size: 20px;
+            padding: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+        }
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 18px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .result-btn {
+            background-color: blue;
+            color: white;
+        }
+        .history-btn {
+            background-color: green;
+            color: white;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        li {
+            padding: 5px;
+            border-bottom: 1px solid white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="particleCanvas"></canvas>
+    <div class="container">
+        <h1>FLETXO FIRE V2</h1>
+        <div class="glowing-red">
+            <div id="textview1" class="textview">Loading...</div>
+            <div id="textview2" class="textview">00:00</div>
+            <div id="textview3" class="textview">Result</div>
+            <div id="textview4" class="textview">TextView4</div>
+            <button id="resultBtn" class="result-btn">RESULT</button>
+            <button id="historyBtn" class="history-btn">HISTORY</button>
+            <ul id="resultList"></ul>
+        </div>
+    </div>
+
+    <script>
+        // Timer and Period Calculation
+        function updateTimer() {
+            const now = new Date();
+            const seconds = now.getUTCSeconds();
+            const remainingSeconds = 60 - seconds;
+            const minutes = now.getUTCMinutes();
+            const totalMinutes = now.getUTCHours() * 60 + minutes;
+
+            const dateStr = now.getUTCFullYear().toString() +
+                String(now.getUTCMonth() + 1).padStart(2, '0') +
+                String(now.getUTCDate()).padStart(2, '0');
+            
+            const periodNumber = dateStr + "1000" + (10001 + totalMinutes);
+
+            document.getElementById("textview1").innerText = periodNumber;
+            document.getElementById("textview2").innerText = `   00  :  ${remainingSeconds.toString().padStart(2, '0')}`.replace(/(?<=\d)(?=\d)/g, " ");
+        }
+
+        setInterval(updateTimer, 1000);
+        updateTimer(); // Initial call
+
+        // Result Button Click
+        let lastPeriod = "";
+        let lastTextView4 = "";
+
+        document.getElementById("resultBtn").addEventListener("click", function () {
+            const currentPeriod = document.getElementById("textview1").innerText;
+            const currentTextView4 = document.getElementById("textview4").innerText;
+
+            if (currentPeriod !== lastPeriod) {
+                const randomResult = Math.random() < 0.5 ? "BIGRED" : "SMALLGREEN";
+
+                if (currentTextView4 !== lastTextView4) {
+                    document.getElementById("textview3").innerText = randomResult;
+                } else {
+                    document.getElementById("textview3").innerText = "Same Result";
+                }
+
+                // Add to ListView
+                const listItem = document.createElement("li");
+                listItem.innerText = `${currentPeriod}: ${document.getElementById("textview3").innerText}`;
+                document.getElementById("resultList").prepend(listItem);
+
+                lastPeriod = currentPeriod;
+                lastTextView4 = currentTextView4;
+            } else {
+                document.getElementById("textview3").innerText = "Please wait for next period";
+            }
+        });
+
+        // Particle Animation
+        const canvas = document.getElementById("particleCanvas");
+        const ctx = canvas.getContext("2d");
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const particles = [];
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.radius = Math.random() * 4 + 1;
+                this.dx = (Math.random() - 0.5) * 2;
+                this.dy = (Math.random() - 0.5) * 2;
+                this.opacity = Math.random();
+                this.color = Math.random() > 0.5 ? 'rgba(255, 0, 0,' : 'rgba(0, 0, 255,';
+            }
+
+            update() {
+                this.x += this.dx;
+                this.y += this.dy;
+
+                if (this.x < 0 || this.x > canvas.width) this.dx *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.dy *= -1;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `${this.color} ${this.opacity})`;
+                ctx.fill();
+                ctx.closePath();
+            }
+        }
+
+        function createParticles() {
+            for (let i = 0; i < 100; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(particle => {
+                particle.update();
+                particle.draw();
+            });
+            requestAnimationFrame(animateParticles);
+        }
+
+        createParticles();
+        animateParticles();
+
+        // Resize canvas on window resize
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
+</body>
+</html>
